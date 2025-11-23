@@ -1,3 +1,5 @@
+import time
+
 from utils.mp_utils.parse import mp_to_arr
 import numpy as np
 from utils.segment_tree import SegmentTree
@@ -73,6 +75,7 @@ class Landmarks:
             if current_frame == len(self.pose):
                 if continuous:
                     continue
+                    time.sleep(0.001)
                 else:
                     break
 
