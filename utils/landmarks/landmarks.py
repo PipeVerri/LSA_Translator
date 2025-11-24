@@ -22,9 +22,8 @@ def nn_parser(pose, left, right):
     right[1:] = right[1:] - right[0].reshape(1, 3)
 
     # Eliminar los puntos mano y cara(no la voy a usar por ahora) de la pose
-    mask = np.ones(pose.shape[0], dtype=bool)
-    mask[15:23] = False
-    mask[0:11] = False
+    mask = np.zeros(pose.shape[0], dtype=bool)
+    mask[11:15] = True # Solo mantener los landmarks de los brazos
     pose = pose[mask]
     return np.concatenate((pose, left, right), axis=0).flatten()
 
@@ -79,8 +78,8 @@ class Landmarks:
             # Empezar con el pose asi tengo algo de lo cual puedo agarrar las manos
             if current_frame == len(self.pose):
                 if continuous:
-                    continue
                     time.sleep(0.001)
+                    continue
                 else:
                     break
 
@@ -95,7 +94,7 @@ class Landmarks:
             else:
                 # Fijarme si tengo limite por derecha para interpolar
                 start, end = self.empty_pose.get_interval(current_frame)
-                if end != current_frame: # Si hay limite y puedo interpolar
+                if end != current_frame and (end + 1) < len(self.pose): # Si hay limite y puedo interpolar
                     interpol_length = end - start + 1
                     # Fijarme si tomarlo como 2 secuencias diferentes o no
                     if interpol_length > self.max_frames_interpolation:
@@ -106,7 +105,11 @@ class Landmarks:
                         pose_frame = next(pose_interpolated)
                 else: # Si no puedo interpolar, esperar a re-capturar la pose o que haya pasado demasiado tiempo
                     if current_frame - start >= self.max_frames_interpolation:
-                        break
+                        if continuous:
+                            current_frame = len(self.pose)
+                            continue
+                        else:
+                            break
                     else:
                         continue
 

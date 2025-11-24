@@ -18,6 +18,8 @@ class LSA64Dataset(Dataset):
 
         if arr.shape[0] == 0:
             raise ValueError(f"Empty array at {filename}")
+        elif arr.shape[1] == 144: # Sacarle los puntos del cuerpo al array
+
 
         tensor = torch.from_numpy(arr).float() # Numpy trabaja con float64 pero torch con float32
         return tensor, label

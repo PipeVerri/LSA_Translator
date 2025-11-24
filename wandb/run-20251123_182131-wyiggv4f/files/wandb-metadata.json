@@ -1,0 +1,15 @@
+{
+  "os": "Linux-6.12.48-1-MANJARO-x86_64-with-glibc2.17",
+  "python": "CPython 3.8.20",
+  "startedAt": "2025-11-23T21:21:31.158447Z",
+  "program": "-m prod.process_lsa64_videos",
+  "git": {
+    "remote": "https://github.com/PipeVerri/SignTranslatorV2",
+    "commit": "55efccbd576533bac4ca1cec81dc6d968944983a"
+  },
+  "email": "f.verri@alumno.etec.um.edu.ar",
+  "root": "/mnt/shared/Proyectos/SignTranslatorV2",
+  "host": "zazabox",
+  "executable": "/home/pipev/.conda/envs/SignTranslator/bin/python",
+  "writerId": "nso4cf0zicaagonmmkk7bs7ajchf8mmg"
+}

@@ -7,12 +7,12 @@ class SimpleRNN(nn.Module):
     def __init__(self):
         super().__init__()
         self.rnn = nn.RNN(
-            input_size=177,
-            hidden_size=177,
+            input_size=144,
+            hidden_size=144,
             num_layers=5,
             batch_first=True
         )
-        self.linear = nn.Linear(177, 64)
+        self.linear = nn.Linear(144, 64)
 
     def forward(self, x, lengths):
         # Para entrenamiento con batch y secuencias de diferentes longitudes

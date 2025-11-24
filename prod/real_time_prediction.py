@@ -82,7 +82,7 @@ def parser_thread():
                 predicted_class = predicted_class.item()
 
                 # Solo hablar si la confianza es alta y es diferente a la última predicción
-                if max_prob >= 0.95:
+                if max_prob >= 0.9:
                     predicted_sign = signs.iloc[predicted_class]["Name"]
 
                     # Evitar repetir la misma predicción consecutivamente

@@ -1,0 +1,26 @@
+_wandb:
+    value:
+        cli_version: 0.23.0
+        e:
+            nso4cf0zicaagonmmkk7bs7ajchf8mmg:
+                email: f.verri@alumno.etec.um.edu.ar
+                executable: /home/pipev/.conda/envs/SignTranslator/bin/python
+                git:
+                    commit: 55efccbd576533bac4ca1cec81dc6d968944983a
+                    remote: https://github.com/PipeVerri/SignTranslatorV2
+                host: zazabox
+                os: Linux-6.12.48-1-MANJARO-x86_64-with-glibc2.17
+                program: -m prod.process_lsa64_videos
+                python: CPython 3.8.20
+                root: /mnt/shared/Proyectos/SignTranslatorV2
+                startedAt: "2025-11-23T21:21:31.158447Z"
+                writerId: nso4cf0zicaagonmmkk7bs7ajchf8mmg
+        m: []
+        python_version: 3.8.20
+        t:
+            "4": 3.8.20
+            "5": 0.23.0
+            "8":
+                - 2
+            "12": 0.23.0
+            "13": linux-x86_64

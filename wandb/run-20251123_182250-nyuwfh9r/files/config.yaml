@@ -1,0 +1,43 @@
+_wandb:
+    value:
+        cli_version: 0.23.0
+        e:
+            3ktuowytmu5lfc4dcsnfu1zdccj85ehm:
+                cpu_count: 6
+                cpu_count_logical: 12
+                cudaVersion: "13.0"
+                disk:
+                    /:
+                        total: "888601051136"
+                        used: "223373049856"
+                email: f.verri@alumno.etec.um.edu.ar
+                executable: /home/pipev/.conda/envs/SignTranslator/bin/python
+                git:
+                    commit: 55efccbd576533bac4ca1cec81dc6d968944983a
+                    remote: https://github.com/PipeVerri/SignTranslatorV2
+                gpu: Quadro T1000
+                gpu_count: 1
+                gpu_nvidia:
+                    - architecture: Turing
+                      cudaCores: 896
+                      memoryTotal: "4294967296"
+                      name: Quadro T1000
+                      uuid: GPU-1f67c0d7-a93e-dc9e-309c-5142093179b0
+                host: zazabox
+                memory:
+                    total: "134649319424"
+                os: Linux-6.12.48-1-MANJARO-x86_64-with-glibc2.17
+                program: -m prod.process_lsa64_videos
+                python: CPython 3.8.20
+                root: /mnt/shared/Proyectos/SignTranslatorV2
+                startedAt: "2025-11-23T21:22:50.416779Z"
+                writerId: 3ktuowytmu5lfc4dcsnfu1zdccj85ehm
+        m: []
+        python_version: 3.8.20
+        t:
+            "4": 3.8.20
+            "5": 0.23.0
+            "8":
+                - 2
+            "12": 0.23.0
+            "13": linux-x86_64

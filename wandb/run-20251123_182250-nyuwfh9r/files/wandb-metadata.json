@@ -1,0 +1,38 @@
+{
+  "os": "Linux-6.12.48-1-MANJARO-x86_64-with-glibc2.17",
+  "python": "CPython 3.8.20",
+  "startedAt": "2025-11-23T21:22:50.416779Z",
+  "program": "-m prod.process_lsa64_videos",
+  "git": {
+    "remote": "https://github.com/PipeVerri/SignTranslatorV2",
+    "commit": "55efccbd576533bac4ca1cec81dc6d968944983a"
+  },
+  "email": "f.verri@alumno.etec.um.edu.ar",
+  "root": "/mnt/shared/Proyectos/SignTranslatorV2",
+  "host": "zazabox",
+  "executable": "/home/pipev/.conda/envs/SignTranslator/bin/python",
+  "cpu_count": 6,
+  "cpu_count_logical": 12,
+  "gpu": "Quadro T1000",
+  "gpu_count": 1,
+  "disk": {
+    "/": {
+      "total": "888601051136",
+      "used": "223373049856"
+    }
+  },
+  "memory": {
+    "total": "134649319424"
+  },
+  "gpu_nvidia": [
+    {
+      "name": "Quadro T1000",
+      "memoryTotal": "4294967296",
+      "cudaCores": 896,
+      "architecture": "Turing",
+      "uuid": "GPU-1f67c0d7-a93e-dc9e-309c-5142093179b0"
+    }
+  ],
+  "cudaVersion": "13.0",
+  "writerId": "3ktuowytmu5lfc4dcsnfu1zdccj85ehm"
+}
