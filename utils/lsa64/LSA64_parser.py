@@ -11,17 +11,12 @@ POSE_CONNECTIONS = mp.solutions.pose.POSE_CONNECTIONS
 HAND_CONNECTIONS = mp.solutions.hands.HAND_CONNECTIONS
 
 class VideoLSA64:
-    _meta = None # Shared param over classes
-
     def __init__(self, path, meta_path, save_path, sign_counter, fps=12):
         self.landmarks = Landmarks()
         self.fps = fps
         self.save_path = save_path
         self.sign_counter = sign_counter
 
-        # Load the csv
-        if VideoLSA64._meta is None:
-            _meta = pd.read_csv(meta_path)
         # Read the video
         self.cap = cv2.VideoCapture(path)
 
@@ -67,6 +62,25 @@ class VideoLSA64:
 
     def exists(self):
         return os.path.exists(self.save_path / (self.sign + "_" + self.id + ".npy"))
+
+    def close(self):
+        """Explicitly free heavy resources."""
+        if hasattr(self, "cap") and self.cap is not None:
+            self.cap.release()
+            self.cap = None
+
+        # If Landmarks holds big lists/arrays, clear them
+        if hasattr(self, "landmarks") and self.landmarks is not None:
+            try:
+                self.landmarks.clear()  # if you have such a method
+            except AttributeError:
+                pass
+            self.landmarks = None
+
+    # optionally:
+    def __del__(self):
+        # Failsafe: if GC collects this object, make sure native resources are closed.
+        self.close()
 
 if __name__ == "__main__":
     rh_path = "../../data/LSA64/video/001_001_001.mp4"

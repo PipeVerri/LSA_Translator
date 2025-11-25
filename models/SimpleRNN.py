@@ -4,19 +4,18 @@ from torch.nn.utils.rnn import pack_padded_sequence
 
 
 class SimpleRNN(nn.Module):
-    def __init__(self):
+    def __init__(self, input_dim=138, hidden_dim=138, hidden_layers=7, output_dim=64):
         super().__init__()
         self.rnn = nn.RNN(
-            input_size=144,
-            hidden_size=144,
-            num_layers=5,
+            input_size=input_dim,
+            hidden_size=hidden_dim,
+            num_layers=hidden_layers,
             batch_first=True
         )
-        self.linear = nn.Linear(144, 64)
+        self.linear = nn.Linear(hidden_dim, output_dim)
 
     def forward(self, x, lengths):
         # Para entrenamiento con batch y secuencias de diferentes longitudes
-        lengths = lengths.cpu()
 
         packed = pack_padded_sequence(
             x, lengths,
@@ -28,27 +27,3 @@ class SimpleRNN(nn.Module):
         last = h[-1]
         logits = self.linear(last)
         return logits
-
-    def forward_online(self, x, hidden=None):
-        """
-        Inferencia online: procesa frame a frame manteniendo el estado.
-
-        Args:
-            x: tensor de shape (batch, seq_len, input_size)
-               Para un solo frame: (1, 1, 177)
-            hidden: estado oculto previo de shape (num_layers, batch, hidden_size)
-                    Si es None, se inicializa en ceros
-
-        Returns:
-            logits: predicción (batch, 64)
-            hidden: nuevo estado oculto para la siguiente llamada
-        """
-        # Pasar el estado oculto anterior (o None para inicializar)
-        out, hidden = self.rnn(x, hidden)
-
-        # out: (batch, seq_len, hidden_size)
-        # Tomar el último output de la secuencia
-        last_out = out[:, -1, :]  # (batch, hidden_size)
-
-        logits = self.linear(last_out)
-        return logits, hidden

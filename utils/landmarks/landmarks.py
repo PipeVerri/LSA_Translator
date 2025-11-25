@@ -22,10 +22,12 @@ def nn_parser(pose, left, right):
     right[1:] = right[1:] - right[0].reshape(1, 3)
 
     # Eliminar los puntos mano y cara(no la voy a usar por ahora) de la pose
-    mask = np.zeros(pose.shape[0], dtype=bool)
-    mask[11:15] = True # Solo mantener los landmarks de los brazos
+    mask = np.ones(pose.shape[0], dtype=bool)
+    mask[15:23] = False
+    mask[0:11] = False
     pose = pose[mask]
     return np.concatenate((pose, left, right), axis=0).flatten()
+
 
 class Landmarks:
     _neutral_hand = None
