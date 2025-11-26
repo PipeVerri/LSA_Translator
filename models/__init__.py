@@ -1,4 +1,3 @@
-from .SimpleRNN import SimpleRNN
-from .TrainingLoop import training_loop
+from models.SimpleRNN.SimpleRNN import SimpleRNN
 
 __all__ = ['SimpleRNN']

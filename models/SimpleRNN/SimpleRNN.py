@@ -1,10 +1,8 @@
-import torch
 import torch.nn as nn
 from torch.nn.utils.rnn import pack_padded_sequence
 
-
 class SimpleRNN(nn.Module):
-    def __init__(self, input_dim=138, hidden_dim=138, hidden_layers=7, output_dim=64):
+    def __init__(self, input_dim=144, hidden_dim=144, hidden_layers=7, output_dim=64):
         super().__init__()
         self.rnn = nn.RNN(
             input_size=input_dim,

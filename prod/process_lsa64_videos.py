@@ -17,7 +17,7 @@ sign_counter = manager.dict()
 # Usar multiprocessing para evitar el GIL y aunque mediapipe no sea pickle-able, no tengo que pasarlo entre procesos
 def process_video(video_path):
     try:
-        vid = VideoLSA64(root_dir / "data" / "LSA64" / "video" / video_path, meta_path, save_path, sign_counter)
+        vid = VideoLSA64(root_dir / "data" / "LSA64" / "video" / video_path, meta_path, save_path, sign_counter, fps=6)
         if not vid.exists():
             vid.generate_landmarks()
             vid.save()

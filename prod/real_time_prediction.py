@@ -1,106 +1,229 @@
 import threading
+import queue
 import cv2
 import numpy as np
 
+from models import SimpleRNN
 from utils.video import camera_reader
 import mediapipe as mp
 from utils.landmarks.landmarks import Landmarks, nn_parser
 from utils.tts import speak
 import pandas as pd
 import torch
-from models import SimpleRNN
 from collections import deque
 import time
+from models.TwoStageRNN import LitHandDetector
+from models.SimpleDetector import LitSimpleSignDetector
 
-# Setup de los datos
+# =========================
+# Setup de datos y modelo
+# =========================
+
+# Meta de signos (si la usás en otro lado)
 signs = pd.read_csv("../data/LSA64/meta.csv")
 
-# Setup de los landmarks
+# Landmarks compartidos
 lm = Landmarks()
 
-# Setup threading
-capture_finished = threading.Event()
+# Threading
+capture_finished = threading.Event()   # Indica que se terminó la captura
+tts_queue = queue.Queue()             # Cola para TTS
+tts_shutdown = threading.Event()      # Señal de apagado para TTS
+window_queue = queue.Queue() # Cola de ventanas para el modelo
 
-# Setup pytorch
-model = SimpleRNN()
-model.load_state_dict(torch.load("../Notebooks/inference/best_params.pth"))
+# Reconocimiento de handedness
+#litModel = LitHandDetector.load_from_checkpoint(
+#    "../models/TwoStageRNN/hand_detector/best_params.ckpt"
+#)
+#model = litModel.model
+#model.eval()
+# Reconocimiento de seña
+litModel = LitSimpleSignDetector.load_from_checkpoint("../models/SimpleDetector/best_params.ckpt")
+model = litModel.model
 model.eval()
 
-# Configuración de sliding window
-WINDOW_SIZE_SECONDS = 2.0  # Tamaño de la ventana en segundos
-STRIDE_SECONDS = 0.2  # Tiempo entre predicciones
+# =========================
+# Configuración sliding window
+# =========================
+
+WINDOW_SIZE_SECONDS = 2.0
+STRIDE_SECONDS = 0.1
+FPS = 12
+
+WINDOW_SIZE_FRAMES = int(WINDOW_SIZE_SECONDS * FPS)   # p.ej. 24
+STRIDE_FRAMES = int(STRIDE_SECONDS * FPS)            # p.ej. 1–2
+
+
+# =========================
+# Hilos
+# =========================
+
+def tts_thread():
+    """Thread dedicado para text-to-speech."""
+    while not tts_shutdown.is_set() or not tts_queue.empty():
+        try:
+            text = tts_queue.get(timeout=0.1)
+            speak(text)
+            tts_queue.task_done()
+        except queue.Empty:
+            continue
 
 
 def generator_thread():
-    with mp.solutions.holistic.Holistic(model_complexity=2, static_image_mode=False) as holistic:
-        for frame in camera_reader(fps=12):
-            hol_res = holistic.process(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
-            lm.add(hol_res.pose_landmarks, hol_res.left_hand_landmarks, hol_res.right_hand_landmarks)
-            cv2.imshow("frame", frame)
-            cv2.waitKey(1)
+    """Thread para captura de video y extracción de landmarks."""
+    with mp.solutions.holistic.Holistic(
+        model_complexity=2,
+        static_image_mode=False
+    ) as holistic:
+        for frame in camera_reader(fps=FPS):
+            # Procesar frame con Mediapipe
+            rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            hol_res = holistic.process(rgb)
 
+            # Guardar landmarks en el buffer compartido
+            lm.add(
+                hol_res.pose_landmarks,
+                hol_res.left_hand_landmarks,
+                hol_res.right_hand_landmarks,
+            )
+
+            # Mostrar frame
+            cv2.imshow("frame", frame)
+            if cv2.waitKey(1) & 0xFF == ord("q"):
+                break
+
+    # Señal de que ya no hay más frames
     capture_finished.set()
+    cv2.destroyAllWindows()
 
 
 def parser_thread():
-    print("running")
+    """
+    Thread para procesar landmarks y construir ventanas.
+    NO corre el modelo, solo arma la sliding window y la pone en window_queue.
+    """
+    print("Parser thread iniciado")
 
-    # Buffer para almacenar (timestamp, landmarks) de la ventana
-    window_buffer = deque()
+    frame_buffer = deque(maxlen=WINDOW_SIZE_FRAMES)
+    frames_seen = 0
+
+    # lm.get_landmarks(continuous=True) debería producir
+    # (pose, left, right) continuamente mientras haya datos.
+    for pose, left, right in lm.get_landmarks(continuous=True):
+        # Parsear landmarks en vector de features
+        x = nn_parser(pose, left, right)
+        frame_buffer.append(x)
+        frames_seen += 1
+
+        # Esperar a tener suficientes frames para la primera ventana
+        if frames_seen < WINDOW_SIZE_FRAMES:
+            continue
+
+        # Procesar cada STRIDE_FRAMES frames
+        if (frames_seen - WINDOW_SIZE_FRAMES) % STRIDE_FRAMES != 0:
+            continue
+
+        # Construir ventana (solo la última)
+        window_np = np.array(frame_buffer, dtype=np.float32)  # (window_size, features)
+        last_window = torch.from_numpy(window_np).unsqueeze(0)  # (1, window_size, features)
+
+        # Enviar ventana a la cola del modelo
+        try:
+            window_queue.put_nowait((last_window, WINDOW_SIZE_FRAMES))
+        except queue.Full:
+            # Si el modelo no da abasto, tiramos esta ventana y seguimos
+            pass
+
+        # Si ya se terminó la captura y no esperamos más landmarks, podemos ir saliendo.
+        if capture_finished.is_set():
+            # Le damos un pequeño tiempo a que se drenen landmarks remanentes (depende de implementación de lm)
+            time.sleep(0.1)
+            break
+
+    print("Parser thread finalizado")
+
+
+def model_thread():
+    """
+    Thread para correr el modelo sobre las ventanas que llegan por window_queue
+    y mandar el resultado al TTS.
+    """
+    print("Model thread iniciado")
     last_prediction = None
-    last_prediction_time = 0
 
     with torch.no_grad():
-        for pose, left, right in lm.get_landmarks(continuous=True):
-            current_time = time.time()
+        while not (capture_finished.is_set() and window_queue.empty()):
+            try:
+                last_window, win_len = window_queue.get(timeout=0.1)
+            except queue.Empty:
+                continue
 
-            # Parsear y agregar al buffer con timestamp
-            x = nn_parser(pose, left, right)
-            window_buffer.append((current_time, x))
+            lengths = torch.tensor([win_len])
 
-            # Eliminar elementos antiguos fuera de la ventana
-            cutoff_time = current_time - WINDOW_SIZE_SECONDS
-            while window_buffer and window_buffer[0][0] < cutoff_time:
-                window_buffer.popleft()
+            # Forward pass de reconocimiento de señas
+            y_pred = model.forward(last_window, lengths)
 
-            # Solo procesar si han pasado STRIDE_SECONDS desde la última predicción
-            # y tenemos suficientes datos en la ventana
-            if (current_time - last_prediction_time) >= STRIDE_SECONDS and len(window_buffer) >= 5:
-                # Preparar el batch con la secuencia actual
-                sequence_data = [landmark for _, landmark in window_buffer]
-                sequence = torch.tensor(np.array([sequence_data])).float()  # Shape: (1, seq_len, features)
-                lengths = torch.tensor([len(sequence_data)])  # Longitud real de la secuencia
+            # CORRECCIÓN: torch.max devuelve (valores, índices)
+            # Necesitas extraer el índice correctamente
+            probs = torch.softmax(y_pred, dim=1)  # dim=1 para batch
+            max_prob, max_idx = torch.max(probs, dim=1)
 
-                # Forward pass
-                logits = model.forward(sequence, lengths)
+            # Convertir a escalar
+            max_idx_scalar = max_idx.item()
+            max_prob_scalar = max_prob.item()
 
-                # Obtener predicción
-                probs = torch.softmax(logits[0], dim=0)
-                max_prob, predicted_class = torch.max(probs, dim=0)
+            pred = signs.iloc[max_idx_scalar]["Name"]
+            print(f"Predicción: {pred} (confianza: {max_prob_scalar:.3f})")
 
-                max_prob = max_prob.item()
-                predicted_class = predicted_class.item()
+            # Evitar repetir el mismo texto
+            if max_idx_scalar != last_prediction and max_prob_scalar > 0.95:
+                last_prediction = max_idx_scalar
+                tts_queue.put(pred)
 
-                # Solo hablar si la confianza es alta y es diferente a la última predicción
-                if max_prob >= 0.9:
-                    predicted_sign = signs.iloc[predicted_class]["Name"]
+            window_queue.task_done()
 
-                    # Evitar repetir la misma predicción consecutivamente
-                    if predicted_sign != last_prediction:
-                        print(f"Predicción: {predicted_sign} (confianza: {max_prob:.2%})")
-                        speak(predicted_sign)
-                        last_prediction = predicted_sign
-                        last_prediction_time = current_time
-
-            if capture_finished.is_set():
-                break
-
-    print("finished")
+    print("Model thread finalizado")
 
 
-thread1 = threading.Thread(target=generator_thread)
-thread2 = threading.Thread(target=parser_thread)
-thread1.start()
-thread2.start()
-thread1.join()
-thread2.join()
+# =========================
+# Main
+# =========================
+
+def main():
+    """Función principal."""
+    # Thread de TTS (daemon, así no bloquea salida forzada)
+    tts_worker = threading.Thread(target=tts_thread, daemon=True)
+    tts_worker.start()
+
+    # Threads de captura, parser y modelo
+    thread_gen = threading.Thread(target=generator_thread)
+    thread_parser = threading.Thread(target=parser_thread)
+    thread_model = threading.Thread(target=model_thread)
+
+    thread_gen.start()
+    thread_parser.start()
+    thread_model.start()
+
+    # Esperar a que termine la captura
+    thread_gen.join()
+    # En este punto capture_finished debería estar seteado dentro de generator_thread
+
+    # Esperar a que el parser termine de consumir landmarks
+    thread_parser.join()
+
+    # Esperar a que el modelo procese todas las ventanas pendientes
+    window_queue.join()
+    # Asegurarnos de que el modelo vea la señal de finalización
+    capture_finished.set()
+    thread_model.join()
+
+    # Vaciar cola de TTS
+    tts_queue.join()
+    tts_shutdown.set()
+    tts_worker.join(timeout=2)
+
+    print("Programa finalizado")
+
+
+if __name__ == "__main__":
+    main()

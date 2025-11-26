@@ -25,6 +25,7 @@ def nn_parser(pose, left, right):
     mask = np.ones(pose.shape[0], dtype=bool)
     mask[15:23] = False
     mask[0:11] = False
+    mask[25:] = False # Por si las dudas
     pose = pose[mask]
     return np.concatenate((pose, left, right), axis=0).flatten()
 

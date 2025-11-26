@@ -1,0 +1,1 @@
+from .hand_detector.network import LitHandDetector
