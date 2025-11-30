@@ -2,7 +2,6 @@ import threading
 import queue
 import cv2
 import numpy as np
-
 from models import SimpleRNN
 from utils.video import camera_reader
 import mediapipe as mp
@@ -27,7 +26,7 @@ lm = Landmarks()
 
 # Threading
 capture_finished = threading.Event()   # Indica que se terminó la captura
-tts_queue = queue.Queue()             # Cola para TTS
+tts_queue = queue.Queue(maxsize=3)             # Cola para TTS
 tts_shutdown = threading.Event()      # Señal de apagado para TTS
 window_queue = queue.Queue() # Cola de ventanas para el modelo
 
@@ -174,9 +173,10 @@ def model_thread():
 
             pred = signs.iloc[max_idx_scalar]["Name"]
             print(f"Predicción: {pred} (confianza: {max_prob_scalar:.3f})")
+            no_sign_prob = probs[0][64]
 
             # Evitar repetir el mismo texto
-            if max_idx_scalar != last_prediction and max_prob_scalar > 0.95:
+            if max_idx_scalar != last_prediction and no_sign_prob < 0.3:
                 last_prediction = max_idx_scalar
                 tts_queue.put(pred)
 

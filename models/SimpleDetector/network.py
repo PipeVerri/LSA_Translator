@@ -7,10 +7,10 @@ import torch.nn as nn
 from lightning.pytorch.utilities import grad_norm
 
 class LitSimpleSignDetector(L.LightningModule):
-    def __init__(self, hidden_layers=5, lr=1e-4, weight_decay=1e-4, lr_reduction_factor=0.5, patience=3):
+    def __init__(self, hidden_layers=5, hidden_width=144, lr=1e-4, weight_decay=1e-4, lr_reduction_factor=0.5, patience=3):
         super().__init__()
         self.save_hyperparameters()
-        self.model = SimpleRNN(hidden_layers=hidden_layers, output_dim=65)
+        self.model = SimpleRNN(hidden_layers=hidden_layers, output_dim=65, hidden_dim=hidden_width)
         self.train_accuracy = Accuracy(task="multiclass", num_classes=65)
         self.validation_accuracy = Accuracy(task="multiclass", num_classes=65)
 

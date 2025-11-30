@@ -38,13 +38,17 @@ class Landmarks:
         lm: List[np.ndarray] = field(default_factory=list)
         empty: SegmentTree = field(default_factory=SegmentTree)
         angles: Dict[int, np.ndarray] = field(default_factory=dict)
+        ratio = None
+        positions: List[np.ndarray] = field(default_factory=list)
+        velocities: List[np.ndarray] = field(default_factory=list)
 
-    def __init__(self, max_frames_interpolation=48):
+    def __init__(self, max_frames_interpolation=48, fps=12):
         self.pose = []
         self.empty_pose = SegmentTree()
         self.left = self.Hand()
         self.right = self.Hand()
         self.max_frames_interpolation = max_frames_interpolation
+        self.fps = fps
 
         if Landmarks._neutral_hand is None:
             path = Path(__file__).resolve().with_name("neutral_hand.npy")
@@ -71,7 +75,7 @@ class Landmarks:
             yield arr[start - 1] + interpol_diff * (i + 1)
         yield None
 
-    def get_landmarks(self, continuous=False):
+    def get_landmarks(self, continuous=False, compute_accel=False):
         # Un generador que va retornando los landmarks a procesar
         current_frame = 0
         pose_interpolated = None
@@ -120,8 +124,8 @@ class Landmarks:
             self.pose[current_frame] = pose_frame
 
             # Ahora procesar las manos
-            left_frame = self._process_hand(self.left, current_frame, pose_frame, 13, 15)
-            right_frame = self._process_hand(self.right, current_frame, pose_frame, 14, 16)
+            left_frame = self._process_hand(self.left, current_frame, pose_frame, 13, 15, compute_accel=compute_accel)
+            right_frame = self._process_hand(self.right, current_frame, pose_frame, 14, 16, compute_accel=compute_accel)
 
             # Visualizarlas
             yield pose_frame, left_frame, right_frame
@@ -164,10 +168,14 @@ class Landmarks:
         R = np.eye(3) + np.sin(angle) * K + (1 - np.cos(angle)) * (K @ K)
         return R
 
-    def _process_hand(self, hand: Hand, current_frame, pose_frame, elbow_num, wrist_num):
+    def _process_hand(self, hand: Hand, current_frame, pose_frame, elbow_num, wrist_num, compute_accel=False):
         # Ahora fijarme si puedo retornar la mano
         if hand.lm[current_frame] is not None:
-            return hand.lm[current_frame]
+            if hand.ratio is None:
+                hand_vec_length = np.linalg.norm(hand.lm[current_frame][0] - hand.lm[current_frame][9])
+                forearm_vec_length = np.linalg.norm(pose_frame[elbow_num] - pose_frame[wrist_num])
+                hand.ratio = forearm_vec_length / hand_vec_length
+            hand_frame = hand.lm[current_frame]
         else:
             # Ya checkee el limite de longitud de interpolacion antes. No voy a interpolar por ahora
             start, end = hand.empty.get_interval(current_frame)
@@ -199,14 +207,23 @@ class Landmarks:
 
             # Aplicar la rotacion
             hand_frame = (R @ hand_frame.T).T
-            # Devolver la mano a sus coordenadas originales
-            hand_frame = hand_frame + wrist_pos
 
             # Escalar la mano para que tenga el ratio correcto
             forearm_size = np.linalg.norm(pose_frame[elbow_num] - pose_frame[wrist_num])
             hand_size = np.linalg.norm(hand_frame[0] - hand_frame[9])
-            target_hand_size = forearm_size / 6.1
+            target_hand_size = forearm_size / (6.1 if (hand.ratio is None) else hand.ratio)
             hand_frame *= target_hand_size / hand_size
+
+            # Ahora calcular la aceleracion respecto al wrist
+            if compute_accel:
+                hand.positions.append(hand_frame)
+                if len(hand.positions) > 1:
+                    hand.velocities.append((hand.positions[-1] - hand.positions[-2]) / self.fps)
+                if len(hand.velocities) > 1:
+                    accel = (hand.velocities[-1] - hand.velocities[-2]) / self.fps
+
+                else:
+                    accel = 0
 
             # Ahora posicionar la mano en el lugar correcto. El wrist de la mano(0) en el wrist del pose(15)
             # mano_wrist_x + x = pose_wrist_x => x = pose_wrist_x - mano_wrist_x

@@ -24,13 +24,19 @@ checkpoint_callback = ModelCheckpoint(
     save_last=False # No guardar el modelo del ultimo epoch
 )
 
-wandb_logger = WandbLogger(project="SignTranslator", save_dir=Path(__file__).parent/"wandb")
+wandb.init(
+    project="SignTranslator",
+    group="v2",
+)
+wandb_logger = WandbLogger(
+    save_dir=Path(__file__).parent/"wandb"
+)
 lr_monitor = LearningRateMonitor(logging_interval="epoch")
 
 trainer = L.Trainer(
-    max_epochs=500,
+    max_epochs=400,
     callbacks=[RichProgressBar(), checkpoint_callback, lr_monitor],
     logger=wandb_logger
 )
-model = LitSimpleSignDetector()
+model = LitSimpleSignDetector(hidden_width=300)
 trainer.fit(model, train_loader, val_dataloaders=test_loader)
