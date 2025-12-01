@@ -1,8 +1,7 @@
 import mediapipe as mp
-import numpy as np
-from utils.landmarks.landmarks import Landmarks
+from src import Landmarks
 from utils.video import camera_reader
-from utils.mp_utils.render import draw_landmarks_from_array
+from src.mediapipe.render import draw_landmarks_from_array
 import cv2
 
 lm = Landmarks()

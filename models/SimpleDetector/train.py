@@ -8,8 +8,7 @@ from pathlib import Path
 from .network import LitSimpleSignDetector
 import wandb
 
-root_dir = Path(__file__).parent.parent.parent
-dataset = LSA64Dataset(root_dir/"data"/"LSA64"/"landmarks")
+
 train_dataset, test_dataset = train_test_split_dataset(dataset)
 
 train_loader = generate_collated_dataloader(train_dataset, batch_size=128)

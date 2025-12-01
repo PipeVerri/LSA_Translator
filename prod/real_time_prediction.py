@@ -2,16 +2,14 @@ import threading
 import queue
 import cv2
 import numpy as np
-from models import SimpleRNN
 from utils.video import camera_reader
 import mediapipe as mp
-from utils.landmarks.landmarks import Landmarks, nn_parser
+from src import Landmarks, nn_parser
 from utils.tts import speak
 import pandas as pd
 import torch
 from collections import deque
 import time
-from models.TwoStageRNN import LitHandDetector
 from models.SimpleDetector import LitSimpleSignDetector
 
 # =========================

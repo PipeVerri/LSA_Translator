@@ -1,4 +1,5 @@
-data/
+data/*
+!src/data/
 .idea/
 .obsidian/
 obsidian/Señario 2.pdf

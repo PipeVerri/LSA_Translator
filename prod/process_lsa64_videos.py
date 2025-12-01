@@ -1,10 +1,9 @@
 import os
 from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
-from utils.lsa64.LSA64_parser import VideoLSA64
+from scripts.LSA64.LSA64_parser import VideoLSA64
 from tqdm import tqdm
 from multiprocessing import Manager
-from contextlib import closing
 
 root_dir = Path(__file__).parent.parent
 videos = os.listdir(root_dir / "data" / "LSA64" / "video")
