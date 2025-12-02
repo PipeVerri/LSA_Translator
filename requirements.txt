@@ -1,0 +1,13 @@
+numpy
+torch
+pandas
+lightning
+sortedcontainers
+gTTS
+pydub
+mediapipe
+torchmetrics
+yt-dlp
+tqdm
+wandb
+matplotlib

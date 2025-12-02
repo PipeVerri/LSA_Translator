@@ -4,20 +4,20 @@ import cv2
 import numpy as np
 from src.utils.video import camera_reader
 import mediapipe as mp
-from src import Landmarks, nn_parser
+from src.lm_processing import Landmarks, nn_parser
 from src.utils.tts import speak
 import pandas as pd
 import torch
 from collections import deque
 import time
-from models.SimpleDetector import LitSimpleSignDetector
+from src.models import SimpleDetector
 
 # =========================
 # Setup de datos y modelo
 # =========================
 
 # Meta de signos (si la usás en otro lado)
-signs = pd.read_csv("../data/LSA64/meta.csv")
+signs = pd.read_csv("../../data/LSA64/meta.csv")
 
 # Landmarks compartidos
 lm = Landmarks()
@@ -35,7 +35,7 @@ window_queue = queue.Queue() # Cola de ventanas para el modelo
 #model = litModel.model
 #model.eval()
 # Reconocimiento de seña
-litModel = LitSimpleSignDetector.load_from_checkpoint("../models/SimpleDetector/best_params.ckpt")
+litModel = SimpleDetector.load_from_checkpoint("../checkpoints/SimpleDetector/best_params.ckpt")
 model = litModel.model
 model.eval()
 

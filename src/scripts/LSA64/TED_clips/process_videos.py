@@ -1,10 +1,10 @@
-from utils.video import frame_reader
+from src.utils.video import frame_reader
 import os
 import math
 import mediapipe as mp
 import cv2
-from utils.mp_utils.parse import mp_to_arr
-from src import nn_parser
+from src.utils.mediapipe import mp_to_arr
+from src.lm_processing import nn_parser
 import numpy as np
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed

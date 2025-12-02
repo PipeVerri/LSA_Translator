@@ -1,7 +1,7 @@
 import os
 from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
-from scripts.LSA64.lsa64_video_class import VideoLSA64
+from src.scripts.LSA64.lsa64_video_class import VideoLSA64
 from tqdm import tqdm
 from multiprocessing import Manager
 

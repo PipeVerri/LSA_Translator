@@ -1,6 +1,6 @@
 import time
 
-from src.mediapipe.parse import mp_to_arr
+from src.utils.mediapipe.parse import mp_to_arr
 import numpy as np
 from src.utils.ds.segment_tree import SegmentTree
 from dataclasses import dataclass, field

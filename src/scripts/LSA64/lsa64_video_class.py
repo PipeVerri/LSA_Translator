@@ -2,8 +2,8 @@ import os
 import cv2
 import numpy as np
 import mediapipe as mp
-from src.mediapipe.render import render_frame, draw_landmarks_from_array
-from src import Landmarks, nn_parser
+from src.utils.mediapipe.render import render_frame, draw_landmarks_from_array
+from src.lm_processing import Landmarks, nn_parser
 from src.utils.video import frame_reader
 
 POSE_CONNECTIONS = mp.solutions.pose.POSE_CONNECTIONS
@@ -82,9 +82,9 @@ class VideoLSA64:
         self.close()
 
 if __name__ == "__main__":
-    rh_path = "../../data/LSA64/video/001_001_001.mp4"
-    bh_path = "../../data/LSA64/video/031_001_001.mp4"
-    meta_path = "../../data/LSA64/meta.csv"
+    rh_path = "../../../data/LSA64/video/001_001_001.mp4"
+    bh_path = "../../../data/LSA64/video/031_001_001.mp4"
+    meta_path = "../../../data/LSA64/meta.csv"
     rec = VideoLSA64(rh_path, meta_path)
     rec.generate_landmarks()
     rec.render()

@@ -1,7 +1,7 @@
 import matplotlib
 matplotlib.use('qt5agg')
 
-from src.mediapipe.parse import mp_to_arr
+from src.utils.mediapipe import mp_to_arr
 import mediapipe as mp
 import cv2
 from matplotlib import pyplot as plt

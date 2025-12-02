@@ -2,7 +2,7 @@ import lightning as L
 import torch
 from lightning.pytorch.cli import ReduceLROnPlateau
 from torchmetrics.classification import Accuracy
-from models import SimpleRNN
+from src.models import SimpleRNN
 import torch.nn as nn
 from lightning.pytorch.utilities import grad_norm
 
